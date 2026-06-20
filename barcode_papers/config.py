@@ -42,7 +42,7 @@ class Config:
     gmail_app_password: str = field(default="", repr=False)
     anthropic_api_key: str = field(default="", repr=False)
     gemini_api_key: str = field(default="", repr=False)
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash"
 
     @property
     def has_anthropic(self) -> bool:
@@ -92,5 +92,5 @@ def load_config(config_path: Path = None) -> Config:
         gmail_app_password=app_pw,
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", "") or "",
         gemini_api_key=os.getenv("GEMINI_API_KEY", "") or "",
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
     )

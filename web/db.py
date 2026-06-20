@@ -1,5 +1,6 @@
 """DB 모델 및 세션 (SQLAlchemy 2.0)."""
 import datetime as dt
+import os
 from typing import List, Optional
 
 from sqlalchemy import (
@@ -69,8 +70,12 @@ if _db_url.startswith("postgres://"):
 _connect_args = {"check_same_thread": False} if _db_url.startswith("sqlite") else {}
 _engine_kwargs = {"connect_args": _connect_args, "future": True}
 if not _db_url.startswith("sqlite"):
-    # 클라우드 DB 연결 끊김 대비
     _engine_kwargs["pool_pre_ping"] = True
+    # 서버리스(Vercel)에서는 함수 호출마다 짧게 연결 → 풀링은 pgbouncer(Supabase)에 맡김
+    if os.getenv("VERCEL"):
+        from sqlalchemy.pool import NullPool
+        _engine_kwargs["poolclass"] = NullPool
+        _engine_kwargs.pop("pool_pre_ping", None)
 
 engine = create_engine(_db_url, **_engine_kwargs)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
