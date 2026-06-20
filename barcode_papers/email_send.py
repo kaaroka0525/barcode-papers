@@ -151,7 +151,21 @@ def build_email(papers: List[Paper], config) -> MIMEMultipart:
 def send_email(message: MIMEMultipart, config) -> None:
     if not config.gmail_app_password:
         raise RuntimeError("GMAIL_APP_PASSWORD 가 설정되지 않았습니다 (.env 확인).")
-    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=60) as server:
-        server.login(config.sender, config.gmail_app_password)
-        server.sendmail(config.sender, config.recipients, message.as_string())
+    # 클라우드(Render 등)에서 IPv6 경로가 없어 'Network is unreachable'가 나는 것을 막기 위해
+    # SMTP 연결 동안 DNS를 IPv4(AF_INET)로만 해석하도록 강제.
+    import socket
+    _orig_getaddrinfo = socket.getaddrinfo
+
+    def _ipv4_only(host, *args, **kwargs):
+        res = _orig_getaddrinfo(host, *args, **kwargs)
+        v4 = [r for r in res if r[0] == socket.AF_INET]
+        return v4 or res
+
+    socket.getaddrinfo = _ipv4_only
+    try:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+            server.login(config.sender, config.gmail_app_password)
+            server.sendmail(config.sender, config.recipients, message.as_string())
+    finally:
+        socket.getaddrinfo = _orig_getaddrinfo
     log.info("메일 발송 완료 → %s", ", ".join(config.recipients))
