@@ -1,0 +1,21 @@
+name: Daily Digest
+
+# 매일 08:00 KST(=23:00 UTC)에 Render의 /cron/run 을 호출해
+# 모든 활성 구독자에게 그날의 논문 다이제스트를 발송한다.
+# (Render 무료 플랜은 유휴 시 잠들기 때문에, 외부에서 깨워 실행)
+on:
+  schedule:
+    - cron: "0 23 * * *"
+  workflow_dispatch: {}   # 수동 실행 버튼
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger digest send
+        run: |
+          curl -fsS -m 900 -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://barcode-papers.onrender.com/cron/run
+          echo ""
+          echo "Digest trigger completed."
