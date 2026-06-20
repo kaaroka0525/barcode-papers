@@ -57,8 +57,7 @@ def landing(request: Request, db=Depends(get_db)):
     user = auth.current_user(request, db)
     if user:
         return RedirectResponse("/dashboard", status_code=302)
-    return templates.TemplateResponse("landing.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "landing.html", {
         "has_google": webcfg.has_google_oauth(),
         "allow_dev": webcfg.ALLOW_DEV_LOGIN,
     })
@@ -75,8 +74,8 @@ def dashboard(request: Request, db=Depends(get_db)):
         .order_by(SentLog.sent_at.desc()).limit(10).all()
     )
     flash = request.session.pop("flash", None)
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, "user": user, "sub": sub,
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "user": user, "sub": sub,
         "recent": recent, "flash": flash,
     })
 

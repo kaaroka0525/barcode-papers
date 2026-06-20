@@ -49,10 +49,13 @@ def run_for_user(db, user, *, ignore_sent: bool = False) -> dict:
     impact.annotate(top, cfg)
     top = order_by_if(top)
     summarize.summarize_all(top, cfg)
-    for p in top:
-        path = pdfs.download_pdf(p)
-        if path:
-            p.figures = pdfs.extract_figures(path)
+    # figure 추출이 가능한 환경(PyMuPDF 설치)에서만 PDF 다운로드 시도.
+    # 서버리스엔 없으므로 느린 PDF 다운로드를 건너뜀.
+    if pdfs.figures_supported():
+        for p in top:
+            path = pdfs.download_pdf(p)
+            if path:
+                p.figures = pdfs.extract_figures(path)
 
     message = email_send.build_email(top, cfg)
     email_send.send_email(message, cfg)

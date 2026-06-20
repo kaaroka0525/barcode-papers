@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: barcode-papers
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-local.txt
+    startCommand: uvicorn web.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: ALLOW_DEV_LOGIN
+        value: "true"
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: WEB_SECRET_KEY
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      # 아래는 비밀값 — Render 대시보드/CLI에서 설정 (sync:false → 커밋 안 됨)
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: BASE_URL
+        sync: false

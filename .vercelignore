@@ -1,0 +1,10 @@
+data/
+.agents/
+.git/
+__pycache__/
+*.pyc
+.env
+*.log
+.claude/
+requirements-local.txt
+com.barcode.papers.daily.plist

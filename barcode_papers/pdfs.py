@@ -19,6 +19,15 @@ _HEADERS = {
 _CAPTION_RE = re.compile(r"(fig(?:ure)?\.?\s*\d+|table\s*\d+)", re.IGNORECASE)
 
 
+def figures_supported() -> bool:
+    """PyMuPDF가 있어야 figure 추출 가능(서버리스엔 보통 없음)."""
+    try:
+        import fitz  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 def _safe_name(paper) -> str:
     base = paper.doi or paper.title
     return re.sub(r"[^\w\-]+", "_", base)[:80] or "paper"

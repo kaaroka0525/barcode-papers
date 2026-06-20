@@ -172,5 +172,12 @@ def summarize_paper(paper, config) -> str:
 
 
 def summarize_all(papers, config) -> None:
-    for p in papers:
-        p.summary = summarize_paper(p, config)
+    if not papers:
+        return
+    # 요약은 네트워크 I/O 위주 → 병렬 처리로 서버리스 시간 제한 회피
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=min(5, len(papers))) as ex:
+        summaries = list(ex.map(lambda p: summarize_paper(p, config), papers))
+    for p, s in zip(papers, summaries):
+        p.summary = s
