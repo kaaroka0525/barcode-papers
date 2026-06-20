@@ -29,10 +29,16 @@ class Config:
     # .env 에서 옴
     gmail_app_password: str = field(default="", repr=False)
     anthropic_api_key: str = field(default="", repr=False)
+    gemini_api_key: str = field(default="", repr=False)
+    gemini_model: str = "gemini-2.0-flash"
 
     @property
     def has_anthropic(self) -> bool:
         return bool(self.anthropic_api_key.strip())
+
+    @property
+    def has_gemini(self) -> bool:
+        return bool(self.gemini_api_key.strip())
 
     def proxy_link(self, url: str) -> str:
         if not url:
@@ -73,4 +79,6 @@ def load_config(config_path: Path = None) -> Config:
         gdrive_folder=raw.get("gdrive_folder", "로봇디자인 논문 아카이브"),
         gmail_app_password=app_pw,
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", "") or "",
+        gemini_api_key=os.getenv("GEMINI_API_KEY", "") or "",
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
     )

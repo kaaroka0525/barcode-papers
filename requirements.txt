@@ -4,6 +4,9 @@ PyYAML>=6.0
 python-dotenv>=1.0
 PyMuPDF>=1.23
 anthropic>=0.39
+# 무료 요약 백엔드(Gemini) + 무료 키워드 번역
+google-generativeai>=0.8
+deep-translator>=1.11
 openpyxl>=3.1
 # 선택: 공식 JCR Impact Factor 수치. 실패해도 OpenAlex 지표로 대체됨.
 impact-factor>=1.1.0

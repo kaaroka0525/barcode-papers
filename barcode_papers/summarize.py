@@ -68,10 +68,47 @@ def _summarize_via_cli(paper, config) -> str:
     return out or _fallback(paper)
 
 
+def _gemini_generate(prompt: str, config, max_tokens: int = 1100):
+    """Gemini(무료 티어)로 텍스트 생성. 실패 시 None."""
+    try:
+        import google.generativeai as genai
+
+        genai.configure(api_key=config.gemini_api_key)
+        model = genai.GenerativeModel(config.gemini_model)
+        resp = model.generate_content(
+            prompt,
+            generation_config={"max_output_tokens": max_tokens, "temperature": 0.3},
+        )
+        return (getattr(resp, "text", "") or "").strip() or None
+    except Exception as e:
+        log.warning("Gemini 호출 실패: %s", e)
+        return None
+
+
+def _summarize_via_gemini(paper, config) -> str:
+    out = _gemini_generate(f"{SYSTEM_PROMPT}\n\n---\n{_user_content(paper)}", config)
+    return out or _fallback(paper)
+
+
 def translate_keyword(keyword: str, config) -> str:
-    """한글 등 비영어 키워드를 영어 검색어로 번역. 영어면 그대로 둔다."""
+    """한글 등 비영어 키워드를 영어 검색어로 번역. 영어면 그대로 둔다.
+
+    1순위: deep-translator(무료, 키 불필요) → 2순위: LLM(있으면) → 실패 시 원문.
+    """
     if keyword.isascii():
         return keyword
+
+    # 1) 무료 번역 라이브러리
+    try:
+        from deep_translator import GoogleTranslator
+
+        out = GoogleTranslator(source="auto", target="en").translate(keyword)
+        if out and out.strip():
+            return out.strip()
+    except Exception as e:
+        log.info("deep-translator 실패(%s) → LLM 폴백", e)
+
+    # 2) LLM 폴백 (있을 때만)
     prompt = (
         "Translate the following research topic into a concise English academic search "
         "query of 2-6 keywords. Output ONLY the query, no quotes, no explanation.\n\n"
@@ -90,6 +127,8 @@ def translate_keyword(keyword: str, config) -> str:
             text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
         except Exception as e:
             log.warning("키워드 번역 실패(API): %s", e)
+    if not text and config.has_gemini:
+        text = _gemini_generate(prompt, config, max_tokens=40)
     if not text:
         text = _run_claude_cli(prompt, timeout=60)
     if text:
@@ -101,8 +140,10 @@ def summarize_paper(paper, config) -> str:
     if not paper.abstract:
         return _fallback(paper)
 
-    # API 키가 없으면 로컬 claude CLI로 요약 (별도 키 불필요)
+    # 백엔드 우선순위: Anthropic → Gemini(무료) → 로컬 claude CLI → 초록
     if not config.has_anthropic:
+        if config.has_gemini:
+            return _summarize_via_gemini(paper, config)
         return _summarize_via_cli(paper, config)
 
     try:
