@@ -1,0 +1,15 @@
+# 로컬 전체 기능용 (파이프라인 + 항상-켜진 웹 + 아카이브).
+# 설치: pip install -r requirements-local.txt
+-r requirements.txt
+
+# 항상-켜진 웹 실행/스케줄러
+uvicorn[standard]>=0.29
+apscheduler>=3.10
+
+# 논문 figure 추출 / 공식 IF / 엑셀 아카이브
+PyMuPDF>=1.23
+impact-factor>=1.1.0
+openpyxl>=3.1
+
+# 선택 요약 백엔드(로컬). 없으면 claude CLI 또는 Gemini REST 사용.
+anthropic>=0.39

@@ -28,6 +28,10 @@ def download_pdf(paper, dest_dir: Path = PDF_DIR) -> Optional[str]:
     """OA PDF가 있으면 내려받아 로컬 경로 반환. 실패 시 None."""
     if not paper.pdf_url:
         return None
+    try:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None
     dest = dest_dir / (_safe_name(paper) + ".pdf")
     try:
         resp = requests.get(paper.pdf_url, headers=_HEADERS, timeout=60, stream=True)

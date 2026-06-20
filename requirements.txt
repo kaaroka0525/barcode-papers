@@ -1,24 +1,14 @@
-# ── 논문 파이프라인 ──
+# Vercel 서버리스(웹) 배포용 — 가벼운 의존성만.
+# 무거운 라이브러리(PyMuPDF, impact_factor, gemini SDK)는 서버리스에서 제외하고,
+# 기능은 자동으로 우아하게 축소됨(figure 생략, IF는 OpenAlex 지표, Gemini는 REST 호출).
+fastapi>=0.110
+jinja2>=3.1
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+authlib>=1.3
+itsdangerous>=2.1
+python-multipart>=0.0.9
 requests>=2.28
 PyYAML>=6.0
 python-dotenv>=1.0
-PyMuPDF>=1.23
-anthropic>=0.39
-# 무료 요약 백엔드(Gemini) + 무료 키워드 번역
-google-generativeai>=0.8
 deep-translator>=1.11
-openpyxl>=3.1
-# 선택: 공식 JCR Impact Factor 수치. 실패해도 OpenAlex 지표로 대체됨.
-impact-factor>=1.1.0
-
-# ── 웹 서비스 ──
-fastapi>=0.110
-uvicorn[standard]>=0.29
-jinja2>=3.1
-sqlalchemy>=2.0
-authlib>=1.3
-itsdangerous>=2.1
-apscheduler>=3.10
-python-multipart>=0.0.9
-# 배포(Postgres/Supabase)용 드라이버
-psycopg2-binary>=2.9

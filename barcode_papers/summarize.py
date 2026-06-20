@@ -69,17 +69,24 @@ def _summarize_via_cli(paper, config) -> str:
 
 
 def _gemini_generate(prompt: str, config, max_tokens: int = 1100):
-    """Gemini(무료 티어)로 텍스트 생성. 실패 시 None."""
-    try:
-        import google.generativeai as genai
+    """Gemini(무료 티어)로 텍스트 생성 — 가벼운 REST 호출(서버리스 번들 최소화). 실패 시 None."""
+    import requests
 
-        genai.configure(api_key=config.gemini_api_key)
-        model = genai.GenerativeModel(config.gemini_model)
-        resp = model.generate_content(
-            prompt,
-            generation_config={"max_output_tokens": max_tokens, "temperature": 0.3},
-        )
-        return (getattr(resp, "text", "") or "").strip() or None
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{config.gemini_model}:generateContent?key={config.gemini_api_key}"
+    )
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.3},
+    }
+    try:
+        resp = requests.post(url, json=payload, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        parts = (data.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
+        text = "".join(p.get("text", "") for p in parts).strip()
+        return text or None
     except Exception as e:
         log.warning("Gemini 호출 실패: %s", e)
         return None

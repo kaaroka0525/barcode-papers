@@ -1,19 +1,22 @@
 """FastAPI 앱 — 로그인, 키워드/이메일 등록, 일일 자동 발송."""
 import datetime as dt
 import logging
+import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import auth
 from . import config as webcfg
-from .db import SentLog, Subscription, SessionLocal, init_db
-from .scheduler import start_scheduler
+from .db import SentLog, Subscription, User, SessionLocal, init_db
 from .service import run_for_user
+
+# Vercel(서버리스)에서는 항상-켜진 스케줄러 대신 Vercel Cron을 사용
+ON_VERCEL = bool(os.getenv("VERCEL"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 for _n in ("sqlalchemy", "sqlalchemy.engine", "sqlalchemy.engine.Engine"):
@@ -42,7 +45,10 @@ def set_flash(request: Request, msg: str, level: str = "success"):
 @app.on_event("startup")
 def _startup():
     init_db()
-    start_scheduler()
+    if not ON_VERCEL:
+        # 로컬/항상-켜진 호스트에서만 내장 스케줄러 사용
+        from .scheduler import start_scheduler
+        start_scheduler()
 
 
 # ---------- 페이지 ----------
@@ -162,3 +168,26 @@ def login_dev(request: Request, email: str = Form(...), db=Depends(get_db)):
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=302)
+
+
+# ---------- Cron (Vercel Cron이 매일 호출) ----------
+@app.get("/cron/run")
+def cron_run(request: Request, db=Depends(get_db)):
+    secret = os.getenv("CRON_SECRET")
+    if secret:
+        if request.headers.get("authorization", "") != f"Bearer {secret}":
+            return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    subs = db.query(Subscription).filter(Subscription.active.is_(True)).all()
+    results = []
+    for sub in subs:
+        user = db.query(User).filter(User.id == sub.user_id).first()
+        if not user:
+            continue
+        try:
+            r = run_for_user(db, user)  # 중복 제외 ON
+        except Exception as e:
+            logging.exception("cron 발송 실패: %s", user.email)
+            r = {"status": "error", "reason": str(e)}
+        results.append({"email": user.email, **r})
+    return JSONResponse({"processed": len(results), "results": results})

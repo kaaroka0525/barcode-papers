@@ -77,6 +77,11 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 
 def init_db():
-    from pathlib import Path
-    Path(webcfg.ROOT / "data").mkdir(parents=True, exist_ok=True)
+    # SQLite(로컬)일 때만 data 디렉터리 필요. Postgres(배포)면 생략.
+    if _db_url.startswith("sqlite"):
+        from pathlib import Path
+        try:
+            Path(webcfg.ROOT / "data").mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
     Base.metadata.create_all(engine)

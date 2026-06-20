@@ -1,0 +1,19 @@
+{
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": ["web/**", "barcode_papers/**", "config.yaml"],
+        "maxLambdaSize": "250mb"
+      }
+    }
+  ],
+  "routes": [
+    { "src": "/static/(.*)", "dest": "api/index.py" },
+    { "src": "/(.*)", "dest": "api/index.py" }
+  ],
+  "crons": [
+    { "path": "/cron/run", "schedule": "0 23 * * *" }
+  ]
+}

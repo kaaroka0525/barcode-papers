@@ -8,9 +8,21 @@ import yaml
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
+# 서버리스(Vercel)는 프로젝트 경로가 읽기 전용 → 쓰기 가능한 /tmp 사용
+if os.getenv("VERCEL"):
+    DATA_DIR = Path("/tmp/barcode_data")
+else:
+    DATA_DIR = ROOT / "data"
 PDF_DIR = DATA_DIR / "pdfs"
 DB_PATH = DATA_DIR / "state.sqlite"
+
+
+def ensure_data_dirs():
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        PDF_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 
 
 @dataclass
