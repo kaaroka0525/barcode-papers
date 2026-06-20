@@ -62,8 +62,7 @@ def run_for_user(db, user, *, ignore_sent: bool = False) -> dict:
         with ThreadPoolExecutor(max_workers=len(top)) as ex:
             list(ex.map(_fetch, top))
 
-    message = email_send.build_email(top, cfg)
-    email_send.send_email(message, cfg)
+    email_send.deliver(top, cfg)
 
     for p in top:
         db.add(SentLog(

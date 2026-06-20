@@ -96,6 +96,30 @@ def _paper_block(idx: int, p: Paper, config, cid_map: dict) -> str:
     """
 
 
+def _subject(papers) -> str:
+    return f"[논문 다이제스트] {dt.date.today().isoformat()} · IF 상위 {len(papers)}편"
+
+
+def _digest_html(papers, config, cid_map=None) -> str:
+    cid_map = cid_map or {}
+    today = dt.date.today().isoformat()
+    blocks = "".join(_paper_block(i, p, config, cid_map) for i, p in enumerate(papers, 1))
+    kw = ", ".join(config.keywords)
+    return f"""
+    <div style="font-family:-apple-system,'Apple SD Gothic Neo',Arial,sans-serif;max-width:680px;margin:0 auto">
+      <h2 style="color:#111">오늘의 논문 다이제스트</h2>
+      <div style="color:#666;font-size:13px;margin-bottom:18px">
+        {today} · 키워드: {html.escape(kw)} · 저널 IF 기준 상위 {len(papers)}편
+      </div>
+      {blocks}
+      <div style="color:#aaa;font-size:12px;margin-top:20px">
+        IF 수치는 JCR 또는 OpenAlex 2년 평균 피인용수(추정) 기준입니다.
+        무료 공개본은 PDF로 첨부되며, 유료 논문은 한양대 프록시 링크로 열람하세요.
+      </div>
+    </div>
+    """
+
+
 def build_email(papers: List[Paper], config) -> MIMEMultipart:
     today = dt.date.today().isoformat()
     root = MIMEMultipart("mixed")
@@ -111,22 +135,7 @@ def build_email(papers: List[Paper], config) -> MIMEMultipart:
         for j, _fig in enumerate(p.figures):
             cid_map[(i, j)] = f"fig{i}_{j}"
 
-    blocks = "".join(_paper_block(i, p, config, cid_map) for i, p in enumerate(papers, 1))
-    kw = ", ".join(config.keywords)
-    body = f"""
-    <div style="font-family:-apple-system,'Apple SD Gothic Neo',Arial,sans-serif;max-width:680px;margin:0 auto">
-      <h2 style="color:#111">오늘의 논문 다이제스트</h2>
-      <div style="color:#666;font-size:13px;margin-bottom:18px">
-        {today} · 키워드: {html.escape(kw)} · 저널 IF 기준 상위 {len(papers)}편
-      </div>
-      {blocks}
-      <div style="color:#aaa;font-size:12px;margin-top:20px">
-        IF 수치는 JCR(impact_factor 패키지) 또는 OpenAlex 2년 평균 피인용수(추정) 기준입니다.
-        무료 공개본은 PDF로 첨부되며, 유료 논문은 한양대 프록시 링크로 열람하세요.
-      </div>
-    </div>
-    """
-    related.attach(MIMEText(body, "html", "utf-8"))
+    related.attach(MIMEText(_digest_html(papers, config, cid_map), "html", "utf-8"))
 
     # 인라인 figure
     for i, p in enumerate(papers, 1):
@@ -168,4 +177,46 @@ def send_email(message: MIMEMultipart, config) -> None:
             server.sendmail(config.sender, config.recipients, message.as_string())
     finally:
         socket.getaddrinfo = _orig_getaddrinfo
-    log.info("메일 발송 완료 → %s", ", ".join(config.recipients))
+    log.info("메일 발송 완료(SMTP) → %s", ", ".join(config.recipients))
+
+
+def send_via_brevo(papers, config) -> None:
+    """Brevo 트랜잭션 이메일 API(HTTPS) — 클라우드에서 SMTP가 막힐 때 사용."""
+    import base64
+    import requests
+
+    attachments = []
+    for i, p in enumerate(papers, 1):
+        if p.pdf_path and Path(p.pdf_path).exists():
+            with open(p.pdf_path, "rb") as f:
+                attachments.append({
+                    "name": f"{i:02d}_{Path(p.pdf_path).name}",
+                    "content": base64.b64encode(f.read()).decode(),
+                })
+
+    payload = {
+        "sender": {"email": config.sender, "name": config.sender_name},
+        "to": [{"email": r} for r in config.recipients],
+        "subject": _subject(papers),
+        "htmlContent": _digest_html(papers, config),  # cid 인라인 이미지 없음
+    }
+    if attachments:
+        payload["attachment"] = attachments
+
+    resp = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={"api-key": config.brevo_api_key, "Content-Type": "application/json",
+                 "Accept": "application/json"},
+        json=payload, timeout=30,
+    )
+    if resp.status_code >= 300:
+        raise RuntimeError(f"Brevo 발송 실패 {resp.status_code}: {resp.text[:200]}")
+    log.info("메일 발송 완료(Brevo) → %s", ", ".join(config.recipients))
+
+
+def deliver(papers, config) -> None:
+    """이메일 발송 — Brevo 키 있으면 HTTPS API, 없으면 Gmail SMTP."""
+    if config.brevo_api_key:
+        send_via_brevo(papers, config)
+    else:
+        send_email(build_email(papers, config), config)

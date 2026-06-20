@@ -98,8 +98,7 @@ def run(dry_run=False, test_email=False, days_back=None, max_papers=None):
         log.info("[dry-run] 메일을 보내지 않고 종료합니다.")
         return
 
-    message = email_send.build_email(top, config)
-    email_send.send_email(message, config)
+    email_send.deliver(top, config)
 
     if not test_email:
         state.mark_sent(top)

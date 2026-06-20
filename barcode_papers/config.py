@@ -43,6 +43,8 @@ class Config:
     anthropic_api_key: str = field(default="", repr=False)
     gemini_api_key: str = field(default="", repr=False)
     gemini_model: str = "gemini-2.5-flash"
+    brevo_api_key: str = field(default="", repr=False)
+    sender_name: str = "논문 다이제스트"
 
     @property
     def has_anthropic(self) -> bool:
@@ -93,4 +95,6 @@ def load_config(config_path: Path = None) -> Config:
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", "") or "",
         gemini_api_key=os.getenv("GEMINI_API_KEY", "") or "",
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        brevo_api_key=os.getenv("BREVO_API_KEY", "") or "",
+        sender_name=raw.get("sender_name", "논문 다이제스트"),
     )
