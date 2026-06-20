@@ -43,7 +43,7 @@ def download_pdf(paper, dest_dir: Path = PDF_DIR) -> Optional[str]:
         return None
     dest = dest_dir / (_safe_name(paper) + ".pdf")
     try:
-        resp = requests.get(paper.pdf_url, headers=_HEADERS, timeout=60, stream=True)
+        resp = requests.get(paper.pdf_url, headers=_HEADERS, timeout=(4, 10), stream=True)
         resp.raise_for_status()
         ctype = resp.headers.get("Content-Type", "")
         if "pdf" not in ctype and not paper.pdf_url.lower().endswith(".pdf"):

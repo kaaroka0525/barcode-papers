@@ -52,10 +52,15 @@ def run_for_user(db, user, *, ignore_sent: bool = False) -> dict:
     # figure 추출이 가능한 환경(PyMuPDF 설치)에서만 PDF 다운로드 시도.
     # 서버리스엔 없으므로 느린 PDF 다운로드를 건너뜀.
     if pdfs.figures_supported():
-        for p in top:
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _fetch(p):
             path = pdfs.download_pdf(p)
             if path:
                 p.figures = pdfs.extract_figures(path)
+
+        with ThreadPoolExecutor(max_workers=len(top)) as ex:
+            list(ex.map(_fetch, top))
 
     message = email_send.build_email(top, cfg)
     email_send.send_email(message, cfg)
