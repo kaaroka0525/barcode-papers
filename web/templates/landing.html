@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>매일 아침, 관심 분야 새 논문을<br/>요약해서 메일로 받아보세요</h1>
+  <p class="sub">키워드만 등록하면 끝. 검색·요약·발송을 자동으로 해드립니다.</p>
+
+  <div class="login-box">
+    {% if has_google %}
+      <a class="btn btn-google" href="/login/google">Google 계정으로 시작하기</a>
+    {% endif %}
+    {% if allow_dev %}
+      <form action="/login/dev" method="post" class="dev-login">
+        <input type="email" name="email" placeholder="이메일(로컬 테스트용)" required/>
+        <button class="btn" type="submit">테스트 로그인</button>
+      </form>
+      {% if not has_google %}
+      <p class="hint">아직 구글 로그인 미설정 — 위 테스트 로그인으로 먼저 확인하세요.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <ul class="features">
+    <li>🔎 OpenAlex 기반 주제 적합도 검색</li>
+    <li>🧠 한국어로 쉽게 풀어쓴 요약</li>
+    <li>📊 저널명 + Impact Factor 표기</li>
+    <li>📬 매일 정해진 시각 자동 발송</li>
+  </ul>
+</section>
+{% endblock %}

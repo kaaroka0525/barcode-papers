@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}논문 다이제스트{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <header class="nav">
+    <a href="/" class="brand">📚 논문 다이제스트</a>
+    <nav>
+      {% if request.session.get('uid') %}
+        <a href="/dashboard">대시보드</a>
+        <a href="/logout">로그아웃</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    {% if flash %}<div class="flash flash-{{ flash.level }}">{{ flash.msg }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">키워드를 등록해두면 매일 정해진 시각에 새 논문을 요약해 이메일로 보내드립니다.</footer>
+</body>
+</html>

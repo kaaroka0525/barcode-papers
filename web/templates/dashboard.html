@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>대시보드</h1>
+<p class="welcome">{{ user.name }}님 ({{ user.email }})</p>
+
+{% if not sub or not sub.keywords %}
+<div class="onboard">
+  👋 시작해볼까요? 아래에 <b>관심 키워드를 3개 이상</b> 적고, 받아볼 것 <b>3개 정도를 체크</b>한 뒤 저장하세요.
+  한글로 적어도 자동으로 영어로 검색합니다.
+</div>
+{% endif %}
+
+<form action="/dashboard" method="post" class="card" id="subForm">
+  <h2>구독 설정</h2>
+
+  <label>① 관심 키워드 입력 <span class="muted">(한 줄에 하나, 3개 이상 권장)</span></label>
+  <textarea id="candidateBox" rows="4" placeholder="예: 제품 디자인 로봇&#10;소셜 로봇 디자인&#10;협동로봇 인간공학&#10;AI 주얼리 디자인"></textarea>
+  <button type="button" class="btn" id="addBtn">② 후보로 추가 ↓</button>
+
+  <label>③ 받아볼 키워드를 선택하세요 <span class="muted">(체크된 것만 사용)</span></label>
+  <div id="chips" class="chips"></div>
+  <input type="hidden" name="keywords_text" id="keywords_text"/>
+
+  <label>받을 이메일 주소</label>
+  <input type="email" name="digest_email" value="{{ sub.digest_email if sub else user.email }}" required/>
+
+  <div class="row">
+    <div>
+      <label>하루 편수</label>
+      <input type="number" name="max_papers" min="1" max="20" value="{{ sub.max_papers if sub else 5 }}"/>
+    </div>
+    <div>
+      <label>최근성(일)</label>
+      <input type="number" name="days_back" min="1" max="365" value="{{ sub.days_back if sub else 90 }}"/>
+    </div>
+    <div>
+      <label>발송 시각(시)</label>
+      <input type="number" name="send_hour" min="0" max="23" value="{{ sub.send_hour if sub else 8 }}"/>
+    </div>
+  </div>
+
+  <label class="checkbox">
+    <input type="checkbox" name="active" {% if not sub or sub.active %}checked{% endif %}/> 자동 발송 켜기
+  </label>
+
+  <button class="btn btn-primary" type="submit">저장</button>
+</form>
+
+<form action="/send-now" method="post" class="send-now">
+  <button class="btn" type="submit">지금 한 번 보내보기</button>
+  <span class="muted">선택한 키워드로 즉시 1회 발송 (요약 생성에 1~2분)</span>
+</form>
+
+<section class="card">
+  <h2>최근 발송 논문</h2>
+  {% if recent %}
+    <ul class="recent">
+      {% for r in recent %}
+        <li>
+          <span class="r-title">{{ r.title }}</span>
+          <span class="muted">{{ r.journal }}{% if r.impact_factor %} · IF {{ '%.2f'|format(r.impact_factor) }}{% endif %} · {{ r.sent_at.strftime('%Y-%m-%d') }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">아직 발송된 논문이 없습니다.</p>
+  {% endif %}
+</section>
+
+<script>
+  const existing = {{ (sub.keywords if sub else []) | tojson }};
+  const chips = document.getElementById('chips');
+  const box = document.getElementById('candidateBox');
+  const hidden = document.getElementById('keywords_text');
+
+  function addChip(text, checked) {
+    text = (text || '').trim();
+    if (!text) return;
+    // 중복 방지
+    for (const el of chips.querySelectorAll('.chip-text')) {
+      if (el.textContent === text) return;
+    }
+    const wrap = document.createElement('label');
+    wrap.className = 'chip';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = checked !== false;
+    const span = document.createElement('span');
+    span.className = 'chip-text'; span.textContent = text;
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'chip-del'; del.textContent = '×';
+    del.onclick = () => wrap.remove();
+    wrap.appendChild(cb); wrap.appendChild(span); wrap.appendChild(del);
+    chips.appendChild(wrap);
+  }
+
+  // 기존 키워드 표시(체크됨)
+  existing.forEach(k => addChip(k, true));
+
+  document.getElementById('addBtn').onclick = () => {
+    box.value.split(/[\n,]/).forEach(line => addChip(line, true));
+    box.value = '';
+  };
+
+  document.getElementById('subForm').addEventListener('submit', (e) => {
+    const selected = [];
+    chips.querySelectorAll('.chip').forEach(c => {
+      if (c.querySelector('input').checked) selected.push(c.querySelector('.chip-text').textContent);
+    });
+    if (selected.length === 0) {
+      e.preventDefault();
+      alert('받아볼 키워드를 최소 1개 이상 체크해주세요. (후보를 먼저 추가하세요)');
+      return;
+    }
+    hidden.value = selected.join('\n');
+  });
+</script>
+{% endblock %}

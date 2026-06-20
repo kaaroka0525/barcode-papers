@@ -1,0 +1,40 @@
+# 매일 논문 다이제스트 설정 — 이 파일만 고치면 동작이 바뀝니다.
+
+# 검색할 키워드 (여러 개 가능). 추가/삭제 자유롭게 하세요.
+# 제품/산업 디자인 관점의 로봇 디자인에 초점.
+keywords:
+  - product design robot
+  - industrial design robot
+  - robot aesthetics appearance design
+  - robot embodiment design user experience
+
+# 메일 수신자 (여러 명 가능)
+recipients:
+  - kaaroka@gmail.com
+
+# 발신 Gmail 계정 (앱 비밀번호를 발급한 계정)
+sender: kaaroka@gmail.com
+
+# 하루에 보낼 최대 논문 수 (IF 상위 N편)
+max_papers: 5
+
+# 키워드당 모아볼 후보 논문 수 (이 풀에서 IF로 정렬해 상위 max_papers 선정)
+candidate_pool_per_keyword: 30
+
+# 며칠 이내 발행 논문을 신규로 볼지 (최근성 창)
+# 제품디자인×로봇 교집합은 논문 수가 적어 90일로 넓게 설정.
+days_back: 90
+
+# 요약에 사용할 Claude 모델 (비용 우선: haiku / 품질 우선: claude-sonnet-4-6)
+summary_model: claude-haiku-4-5-20251001
+
+# OpenAlex 폴라이트 풀 사용을 위한 연락 이메일
+openalex_mailto: kaaroka@gmail.com
+
+# 한양대 도서관 프록시 링크 템플릿. {url} 자리에 원문 URL이 들어갑니다.
+# 정확한 형식은 한양대 도서관에서 확인 후 교체하세요. (EZproxy 일반형 기본값)
+hanyang_proxy_template: "https://login.libproxy.hanyang.ac.kr/login?url={url}"
+
+# 아카이브(마음에 든 논문)를 올릴 Google Drive 설정 (rclone 사용)
+gdrive_remote: gdrive                       # rclone 원격 이름
+gdrive_folder: 로봇디자인 논문 아카이브        # 업로드할 드라이브 폴더명
